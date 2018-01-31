@@ -1,7 +1,7 @@
 package com.digitalreasoning.langpredict.util
 
 import java.lang.Character.UnicodeBlock
-import java.util.*
+import java.lang.Character.UnicodeBlock.*
 import java.util.regex.Pattern
 
 class NGram {
@@ -61,42 +61,30 @@ class NGram {
     companion object {
         private val LATIN1_EXCLUDED: String = Messages.getString("NGram.LATIN1_EXCLUDE")
         val N_GRAM = 3
-        val cjk_map: HashMap<Char, Char> = HashMap()
 
         /**
-         * Character Normalization
-         * @param ch
-         * @return Normalized character
+         * Character normalization function. Takes the original character as its parameter and returns the
+         * normalized character.
+         * @param ch the original character
+         * @return the normalized character
          */
-        fun normalize(ch: Char): Char {
-            var result = ch
-            val block = Character.UnicodeBlock.of(result)
-            if (block === UnicodeBlock.BASIC_LATIN) {
-                if (result < 'A' || result < 'a' && result > 'Z' || result > 'z') result = ' '
-            } else if (block === UnicodeBlock.LATIN_1_SUPPLEMENT) {
-                if (LATIN1_EXCLUDED.indexOf(result) >= 0) result = ' '
-            } else if (block === UnicodeBlock.LATIN_EXTENDED_B) {
-                // normalization for Romanian
-                if (result == '\u0219') result = '\u015f'  // Small S with comma below => with cedilla
-                if (result == '\u021b') result = '\u0163'  // Small T with comma below => with cedilla
-            } else if (block === UnicodeBlock.GENERAL_PUNCTUATION) {
-                result = ' '
-            } else if (block === UnicodeBlock.ARABIC) {
-                if (result == '\u06cc') result = '\u064a'  // Farsi yeh => Arabic yeh
-            } else if (block === UnicodeBlock.LATIN_EXTENDED_ADDITIONAL) {
-                if (result >= '\u1ea0') result = '\u1ec3'
-            } else if (block === UnicodeBlock.HIRAGANA) {
-                result = '\u3042'
-            } else if (block === UnicodeBlock.KATAKANA) {
-                result = '\u30a2'
-            } else if (block === UnicodeBlock.BOPOMOFO || block === UnicodeBlock.BOPOMOFO_EXTENDED) {
-                result = '\u3105'
-            } else if (block === UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS) {
-                cjk_map.get(result)?.let { result = it }
-            } else if (block === UnicodeBlock.HANGUL_SYLLABLES) {
-                result = '\uac00'
-            }
-            return result
+        fun normalize(ch: Char): Char = when (Character.UnicodeBlock.of(ch)) {
+            BASIC_LATIN                 -> if (ch !in 'a'..'z' && ch !in 'A'..'Z') ' ' else ch
+            LATIN_1_SUPPLEMENT          -> if (LATIN1_EXCLUDED.indexOf(ch) >= 0) ' ' else ch
+            LATIN_EXTENDED_B            -> when (ch) { // normalization for Romanian
+                                               '\u0219' -> '\u015f' // Small S with comma below => with cedilla
+                                               '\u021b' -> '\u0163' // Small T with comma below => with cedilla
+                                               else -> ch
+                                           }
+            GENERAL_PUNCTUATION         -> ' '
+            ARABIC                      -> if (ch == '\u06cc') '\u064a' else ch // Farsi yeh => Arabic yeh
+            LATIN_EXTENDED_ADDITIONAL   -> if (ch >= '\u1ea0') '\u1ec3' else ch
+            HIRAGANA                    -> '\u3042'
+            KATAKANA                    -> '\u30a2'
+            BOPOMOFO, BOPOMOFO_EXTENDED -> '\u3105'
+            CJK_UNIFIED_IDEOGRAPHS      -> cjk_map.get(ch) ?: ch
+            HANGUL_SYLLABLES            -> '\uac00'
+            else                        -> ch
         }
 
         /**
@@ -142,14 +130,10 @@ class NGram {
                 "7_21", "7_23", "7_25", "7_28", "7_29", "7_32", "7_33", "7_35", "7_37"
                 ).map { Messages.getString("NGram.KANJI_${it}") }
 
-        init {
-            for (cjk_list in CJK_CLASS) {
-                val representative = cjk_list[0]
-                for (i in 0 until cjk_list.length) {
-                    cjk_map.put(cjk_list[i], representative)
-                }
-            }
-        }
+        val cjk_map: Map<Char, Char> = CJK_CLASS.flatMap { cjk_list ->
+            cjk_list.toCharArray().map { it to cjk_list[0] }
+        }.toMap()
+
     }
 
 }
