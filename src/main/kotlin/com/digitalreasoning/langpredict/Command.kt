@@ -1,7 +1,6 @@
 package com.digitalreasoning.langpredict
 
-import net.arnx.jsonic.JSON
-import net.arnx.jsonic.JSONException
+import com.digitalreasoning.langpredict.profilegen.GenProfile
 import java.io.*
 import java.util.*
 
@@ -94,18 +93,12 @@ class Command {
      * load profiles
      * @return false if load success
      */
-    private fun loadProfile(): Boolean {
+    private fun loadProfile(): DetectorProfiles {
         val profileDirectory = get("directory")!! + "/"
-        try {
-            DetectorFactory.loadProfile(profileDirectory)
-            val seed = getLong("seed")
-            if (seed != null) DetectorFactory.setSeed(seed)
-            return false
-        } catch (e: LangDetectException) {
-            System.err.println("ERROR: " + e.message)
-            return true
-        }
-
+        val prof = DetectorFactory.loadProfile(profileDirectory)
+        val seed = getLong("seed")
+        if (seed != null) prof.setSeed(seed)
+        return prof
     }
 
     /**
@@ -132,9 +125,9 @@ class Command {
 
                 val profile_path = File(get("directory") + "/profiles/" + lang)
                 os = FileOutputStream(profile_path)
-                JSON.encode(profile, os)
-            } catch (e: JSONException) {
-                e.printStackTrace()
+//                JSON.encode(profile, os)
+//            } catch (e: JSONException) {
+//                e.printStackTrace()
             } catch (e: IOException) {
                 e.printStackTrace()
             } catch (e: LangDetectException) {
@@ -181,9 +174,9 @@ class Command {
 
             val profile_path = File(lang)
             os = FileOutputStream(profile_path)
-            JSON.encode(profile, os)
-        } catch (e: JSONException) {
-            e.printStackTrace()
+//            JSON.encode(profile, os)
+//        } catch (e: JSONException) {
+//            e.printStackTrace()
         } catch (e: IOException) {
             e.printStackTrace()
         } catch (e: LangDetectException) {
@@ -206,13 +199,13 @@ class Command {
      *
      */
     fun detectLang() {
-        if (loadProfile()) return
+        val prof = loadProfile()
         for (filename in arglist) {
             var `is`: BufferedReader? = null
             try {
                 `is` = BufferedReader(InputStreamReader(FileInputStream(filename), "utf-8"))
 
-                val detector = DetectorFactory.create(getDouble("alpha", DEFAULT_ALPHA))
+                val detector = DetectorFactory.create(prof, getDouble("alpha", DEFAULT_ALPHA))
                 if (hasOpt("--debug")) detector.setVerbose()
                 detector.append(`is`)
                 println(filename + ":" + detector.probabilities)
@@ -245,7 +238,7 @@ class Command {
      *
      */
     fun batchTest() {
-        if (loadProfile()) return
+        val prof = loadProfile()
         val result = HashMap<String, ArrayList<String>>()
         for (filename in arglist) {
             var `is`: BufferedReader? = null
@@ -258,7 +251,7 @@ class Command {
                     val correctLang = line.substring(0, idx)
                     val text = line.substring(idx + 1)
 
-                    val detector = DetectorFactory.create(getDouble("alpha", DEFAULT_ALPHA))
+                    val detector = DetectorFactory.create(prof, getDouble("alpha", DEFAULT_ALPHA))
                     detector.append(text)
                     var lang = ""
                     try {

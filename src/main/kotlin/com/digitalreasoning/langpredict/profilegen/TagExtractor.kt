@@ -1,30 +1,20 @@
-package com.digitalreasoning.langpredict.util
+package com.digitalreasoning.langpredict.profilegen
 
 /**
  * [TagExtractor] is a class which extracts inner texts of specified tag.
  * Users don't use this class directly.
  * @author Nakatani Shuyo
  */
-class TagExtractor(internal var target_: String?, internal var threshold_: Int) {
-    internal var buf: StringBuffer = StringBuffer()
+class TagExtractor(internal var target_: String, internal var threshold_: Int) {
+    private val buf: StringBuffer = StringBuffer()
     internal var tag: String? = null
     private var count: Int = 0
-
-    init {
-        count = 0
-        clear()
-    }
 
     fun count(): Int {
         return count
     }
 
-    fun clear() {
-        buf = StringBuffer()
-        tag = null
-    }
-
-    fun setTag(tag: String?) {
+    fun setTag(tag: String) {
         this.tag = tag
     }
 
@@ -40,7 +30,8 @@ class TagExtractor(internal var target_: String?, internal var threshold_: Int) 
             st = buf.toString()
             ++count
         }
-        clear()
+        buf.setLength(0) // clear the buffer
+        tag = null
         return st
     }
 

@@ -5,16 +5,11 @@ package com.digitalreasoning.langpredict.util
 
 import spock.lang.Specification
 
-class NGramTest extends Specification {
-
-    def "testConstants"() {
-        expect:
-        NGram.N_GRAM == 3
-    }
+class CharacterNormalizerTest extends Specification {
 
     def "testNormalizeWithLatin"() {
         expect:
-        NGram.@Companion.normalize(inputChar.toCharacter().charValue()) == expectedChar.toCharacter()
+        CharacterNormalizer.INSTANCE.normalize(inputChar.toCharacter().charValue()) == expectedChar.toCharacter()
 
         where:
         inputChar | expectedChar
@@ -38,7 +33,7 @@ class NGramTest extends Specification {
 
     def "testNormalizeWithCJKKanji"() {
         expect:
-        NGram.@Companion.normalize(inputChar.toCharacter()) == expectedChar.toCharacter()
+        CharacterNormalizer.INSTANCE.normalize(inputChar.toCharacter()) == expectedChar.toCharacter()
 
         where:
         inputChar | expectedChar
@@ -71,7 +66,7 @@ class NGramTest extends Specification {
 
     def "testNormalizeForRomanian"() {
         expect:
-        NGram.@Companion.normalize(inputChar.toCharacter()) == expectedChar.toCharacter()
+        CharacterNormalizer.INSTANCE.normalize(inputChar.toCharacter()) == expectedChar.toCharacter()
 
         where:
         inputChar | expectedChar
@@ -81,130 +76,9 @@ class NGramTest extends Specification {
         '\u021b'  | '\u0163'
     }
 
-    def "testNGram"() {
-        setup:
-        final NGram ngram = new NGram()
-
-        expect:
-        ngram.get(0) == null
-        ngram.get(1) == null
-        ngram.get(2) == null
-        ngram.get(3) == null
-        ngram.get(4) == null
-
-        when:
-        ngram.addChar(' '.toCharacter())
-
-        then:
-        ngram.get(1) == null
-        ngram.get(2) == null
-        ngram.get(3) == null
-
-        when:
-        ngram.addChar('A'.toCharacter())
-
-        then:
-        ngram.get(1) == "A"
-        ngram.get(2) == " A"
-        ngram.get(3) == null
-
-        when:
-        ngram.addChar('\u06cc'.toCharacter())
-
-        then:
-        ngram.get(1) == "\u064a"
-        ngram.get(2) == "A\u064a"
-        ngram.get(3) == " A\u064a"
-
-        when:
-        ngram.addChar('\u1ea0'.toCharacter())
-
-        then:
-        ngram.get(1) == "\u1ec3"
-        ngram.get(2) == "\u064a\u1ec3"
-        ngram.get(3) == "A\u064a\u1ec3"
-
-        when:
-        ngram.addChar('\u3044'.toCharacter())
-
-        then:
-        ngram.get(1) == "\u3042"
-        ngram.get(2) == "\u1ec3\u3042"
-        ngram.get(3) == "\u064a\u1ec3\u3042"
-
-        when:
-        ngram.addChar('\u30a4'.toCharacter())
-
-        then:
-        ngram.get(1) == "\u30a2"
-        ngram.get(2) == "\u3042\u30a2"
-        ngram.get(3) == "\u1ec3\u3042\u30a2"
-
-        when:
-        ngram.addChar('\u3106'.toCharacter())
-
-        then:
-        ngram.get(1) == "\u3105"
-        ngram.get(2) == "\u30a2\u3105"
-        ngram.get(3) == "\u3042\u30a2\u3105"
-
-        when:
-        ngram.addChar('\uac01'.toCharacter())
-
-        then:
-        ngram.get(1) == "\uac00"
-        ngram.get(2) == "\u3105\uac00"
-        ngram.get(3) == "\u30a2\u3105\uac00"
-
-        when:
-        ngram.addChar('\u2010'.toCharacter())
-
-        then:
-        ngram.get(1) == null
-        ngram.get(2) == "\uac00 "
-        ngram.get(3) == "\u3105\uac00 "
-
-        when:
-        ngram.addChar('a'.toCharacter())
-
-        then:
-        ngram.get(1) == "a"
-        ngram.get(2) == " a"
-        ngram.get(3) == null
-    }
- 
-    def "testNGram3"() {
-        setup:
-        final NGram ngram = new NGram()
-
-        when:
-        ngram.addChar('A'.toCharacter())
-
-        then:
-        ngram.get(1) == "A"
-        ngram.get(2) == " A"
-        ngram.get(3) == null
-
-        when:
-        ngram.addChar('1'.toCharacter())
-
-        then:
-        ngram.get(1) == null
-        ngram.get(2) == "A "
-        ngram.get(3) == " A "
-
-        when:
-        ngram.addChar('B'.toCharacter())
-
-        then:
-        ngram.get(1) == "B"
-        ngram.get(2) == " B"
-        ngram.get(3) == null
-    }
-
     def "testNormalizeVietnamese"() {
         expect:
-        NGram.@Companion.normalize_vi(inputStr) == expectedStr
+        CharacterNormalizer.INSTANCE.normalize_vi(inputStr) == expectedStr
 
         where:
         inputStr       | expectedStr

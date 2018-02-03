@@ -3,8 +3,7 @@
  */
 package com.digitalreasoning.langpredict
 
-import com.digitalreasoning.langpredict.util.LangProfile
-import net.arnx.jsonic.JSON
+import com.digitalreasoning.langpredict.profilegen.LanguageProfileGenerator
 import spock.lang.Specification
 
 class MultipleProfileTest extends Specification {
@@ -16,20 +15,20 @@ class MultipleProfileTest extends Specification {
         final ArrayList<String> sample_data1 = new ArrayList<String>()
         final ArrayList<String> sample_data2 = new ArrayList<String>()
 
-        final LangProfile profile_en = new LangProfile("en")
+        final LanguageProfileGenerator profile_en = new LanguageProfileGenerator("en")
         profile_en.update("This is a pen.")
-        final String json_en = JSON.encode(profile_en)
+        final String json_en = LanguageProfileFactory.INSTANCE.toJson(profile_en.generate())
         sample_data1.add(json_en)
         sample_data2.add(json_en)
 
-        final LangProfile profile_it = new LangProfile("it")
+        final LanguageProfileGenerator profile_it = new LanguageProfileGenerator("it")
         profile_it.update("Sono un studente.")
-        final String json_it = JSON.encode(profile_it)
+        final String json_it = LanguageProfileFactory.INSTANCE.toJson(profile_it.generate())
         sample_data1.add(json_it)
 
-        final  LangProfile profile_fr = new LangProfile("fr")
+        final  LanguageProfileGenerator profile_fr = new LanguageProfileGenerator("fr")
         profile_fr.update("Je suis japonais.")
-        final String json_fr = JSON.encode(profile_fr)
+        final String json_fr = LanguageProfileFactory.INSTANCE.toJson(profile_fr.generate())
         sample_data2.add(json_fr)
 
         profile1 = DetectorFactory.@Companion.loadProfile(sample_data1)
@@ -38,7 +37,8 @@ class MultipleProfileTest extends Specification {
 
     def "testMultiProfile1"() {
         setup:
-        DetectorFactory.@Companion.setSeed(1)
+        profile1.setSeed(1)
+        profile2.setSeed(1)
         final Detector detector1 = DetectorFactory.@Companion.create(profile1)
         final Detector detector2 = DetectorFactory.@Companion.create(profile2)
         final String text = "is"
@@ -52,7 +52,8 @@ class MultipleProfileTest extends Specification {
 
     def "testMultiProfile2"() {
         setup:
-        DetectorFactory.@Companion.setSeed(1)
+        profile1.setSeed(1)
+        profile2.setSeed(1)
         final Detector detector1 = DetectorFactory.@Companion.create(profile1)
         final Detector detector2 = DetectorFactory.@Companion.create(profile2)
         final String text = "sono"
@@ -66,7 +67,8 @@ class MultipleProfileTest extends Specification {
 
     def "testMultiProfile3"() {
         setup:
-        DetectorFactory.@Companion.setSeed(1)
+        profile1.setSeed(1)
+        profile2.setSeed(1)
         final Detector detector1 = DetectorFactory.@Companion.create(profile1)
         final Detector detector2 = DetectorFactory.@Companion.create(profile2)
         final String text = "suis"

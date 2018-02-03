@@ -8,12 +8,11 @@ class LanguagePredictionTest extends Specification {
     @Unroll
     def "some actual language predictions should work"() {
         setup:
-        DetectorFactory.@Companion.clear()
-        DetectorFactory.@Companion.loadProfile(new File("src/main/resources/profiles"))
-        DetectorFactory.@Companion.setSeed(1)
+        def prof = DetectorFactory.@Companion.loadProfile(new File("src/main/resources/profiles"))
+        prof.setSeed(1)
 
         expect:
-        final Detector detector = DetectorFactory.@Companion.create()
+        final Detector detector = DetectorFactory.@Companion.create(prof)
         detector.append(testText)
         detector.detect() == prediction
 

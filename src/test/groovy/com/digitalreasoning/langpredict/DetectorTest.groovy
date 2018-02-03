@@ -9,12 +9,11 @@ class DetectorTest extends Specification {
 
     def "testFactoryFromJsonString"() {
         setup:
-        DetectorFactory.@Companion.clear()
         final ArrayList<String> profiles = new ArrayList<String>()
         profiles.add(JSON_LANG1)
         profiles.add(JSON_LANG2)
-        DetectorFactory.@Companion.loadProfile(profiles)
-        final List<String> langList = DetectorFactory.@Companion.getLangList()
+        def prof = DetectorFactory.@Companion.loadProfile(profiles)
+        final List<String> langList = prof.langList
 
         expect:
         langList.size() == 2
@@ -24,7 +23,6 @@ class DetectorTest extends Specification {
 
     def "testFactoryFromJsonStringForMultiProfiles"() {
         setup:
-        DetectorFactory.@Companion.clear()
         final ArrayList<String> profiles = new ArrayList<String>()
         profiles.add(JSON_LANG1)
         profiles.add(JSON_LANG2)

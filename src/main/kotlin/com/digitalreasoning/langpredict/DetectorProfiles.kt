@@ -1,6 +1,5 @@
 package com.digitalreasoning.langpredict
 
-import com.digitalreasoning.langpredict.util.LangProfile
 import java.util.*
 
 /**
@@ -14,8 +13,8 @@ import java.util.*
  * @author Nakatani Shuyo
  */
 class DetectorProfiles {
-    var wordLangProbMap: HashMap<String, DoubleArray> = HashMap()
-    var langlist: ArrayList<String> = ArrayList()
+    val wordLangProbMap: HashMap<String, DoubleArray> = HashMap()
+    val langlist: ArrayList<String> = ArrayList()
     var seed: Long? = null
 
     /**
@@ -24,22 +23,21 @@ class DetectorProfiles {
     val langList: List<String>
         get() = Collections.unmodifiableList(langlist)
 
-    fun addProfile(profile: LangProfile, index: Int, langsize: Int) {
+    fun addProfile(profile: LanguageProfile, index: Int, langsize: Int) {
         val lang = profile.name
         if (langlist.contains(lang)) {
             throw LangDetectException("duplicate the same language profile")
         }
-        if (lang != null) {
-            langlist.add(lang)
-            for (word in profile.freq.keys) {
-                if (!wordLangProbMap.containsKey(word)) {
-                    wordLangProbMap.put(word, DoubleArray(langsize))
-                }
-                val length = word.length
-                if (length in 1..3) {
-                    val prob = profile.freq[word]!!.toDouble() / profile.n_words[length - 1]
-                    wordLangProbMap[word]!![index] = prob
-                }
+
+        langlist.add(lang)
+        for (word in profile.frequencyMap.keys) {
+            if (!wordLangProbMap.containsKey(word)) {
+                wordLangProbMap.put(word, DoubleArray(langsize))
+            }
+            val length = word.length
+            if (length in 1..3) {
+                val prob = profile.frequencyMap[word]!!.toDouble() / profile.ngramCounts[length - 1]
+                wordLangProbMap[word]!![index] = prob
             }
         }
     }

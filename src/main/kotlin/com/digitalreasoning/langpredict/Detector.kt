@@ -1,6 +1,7 @@
 package com.digitalreasoning.langpredict
 
-import com.digitalreasoning.langpredict.util.NGram
+import com.digitalreasoning.langpredict.util.CharacterNormalizer
+import com.digitalreasoning.langpredict.util.NGramGenerator
 import java.io.IOException
 import java.io.Reader
 import java.lang.Character.UnicodeBlock
@@ -51,13 +52,7 @@ import java.util.regex.Pattern
  * @author Nakatani Shuyo
  * @see DetectorFactory
  */
-class Detector
-/**
- * Constructor.
- * Detector instance can be constructed via [DetectorFactory.create].
- * @param profiles [DetectorFactory] instance (only DetectorFactory inside)
- */
-(profiles: DetectorProfiles) {
+class Detector(profiles: DetectorProfiles) {
 
     private val wordLangProbMap: HashMap<String, DoubleArray>
     private val langlist: ArrayList<String>
@@ -66,8 +61,8 @@ class Detector
     private var langprob: DoubleArray = DoubleArray(0)
 
     private var alpha = ALPHA_DEFAULT
-    private val n_trial = 7
-    private var max_text_length = 10000
+    private val numTrials = 7
+    private var maxTextLength = 10000
     private var priorMap: DoubleArray = DoubleArray(0)
     private var verbose = false
     private val seed: Long?
@@ -88,7 +83,6 @@ class Detector
     init {
         this.wordLangProbMap = profiles.wordLangProbMap
         this.langlist = profiles.langlist
-        this.text = StringBuffer()
         this.seed = profiles.seed
     }
 
@@ -111,13 +105,11 @@ class Detector
     /**
      * Set prior information about language probabilities.
      * @param priorMap the priorMap to set
-     * @throws LangDetectException
      */
-    @Throws(LangDetectException::class)
     fun setPriorMap(priorMap: HashMap<String, Double>) {
         this.priorMap = DoubleArray(langlist.size)
         var sump = 0.0
-        for (i in this.priorMap!!.indices) {
+        for (i in this.priorMap.indices) {
             val lang = langlist[i]
             if (priorMap.containsKey(lang)) {
                 val p = priorMap[lang] ?: 0.0
@@ -127,16 +119,16 @@ class Detector
             }
         }
         if (sump <= 0) throw LangDetectException("More one of prior probability must be non-zero.")
-        for (i in this.priorMap!!.indices) this.priorMap[i] /= sump
+        for (i in this.priorMap.indices) this.priorMap[i] /= sump
     }
 
     /**
      * Specify max size of target text to use for language detection.
      * The default value is 10000(10KB).
-     * @param max_text_length the max_text_length to set
+     * @param max_text_length the maxTextLength to set
      */
     fun setMaxTextLength(max_text_length: Int) {
-        this.max_text_length = max_text_length
+        this.maxTextLength = max_text_length
     }
 
 
@@ -151,8 +143,8 @@ class Detector
      */
     @Throws(IOException::class)
     fun append(reader: Reader) {
-        val buf = CharArray(max_text_length / 2)
-        while (text!!.length < max_text_length && reader.ready()) {
+        val buf = CharArray(maxTextLength / 2)
+        while (text.length < maxTextLength && reader.ready()) {
             val length = reader.read(buf)
             append(String(buf, 0, length))
         }
@@ -166,15 +158,15 @@ class Detector
      * @param text the target text to append
      */
     fun append(text: String) {
-        var text = text
-        text = URL_REGEX.matcher(text).replaceAll(" ")
-        text = MAIL_REGEX.matcher(text).replaceAll(" ")
-        text = NGram.normalize_vi(text)
+        var normText = text
+        normText = URL_REGEX.matcher(normText).replaceAll(" ")
+        normText = MAIL_REGEX.matcher(normText).replaceAll(" ")
+        normText = CharacterNormalizer.normalize_vi(normText)
         var pre: Char = 0.toChar()
         var i = 0
-        while (i < text.length && i < max_text_length) {
-            val c = text[i]
-            if (c != ' ' || pre != ' ') this.text!!.append(c)
+        while (i < normText.length && i < maxTextLength) {
+            val c = normText[i]
+            if (c != ' ' || pre != ' ') this.text.append(c)
             pre = c
             ++i
         }
@@ -187,20 +179,21 @@ class Detector
     private fun cleaningText() {
         var latinCount = 0
         var nonLatinCount = 0
-        for (i in 0 until text!!.length) {
-            val c = text!![i]
-            if (c <= 'z' && c >= 'A') {
-                ++latinCount
-            } else if (c >= '\u0300' && UnicodeBlock.of(c) !== UnicodeBlock.LATIN_EXTENDED_ADDITIONAL) {
-                ++nonLatinCount
-            }
-        }
+        (0 until text.length)
+                .map { text[it] }
+                .forEach {
+                    if (it in 'A'..'z') {
+                        ++latinCount
+                    } else if (it >= '\u0300' && UnicodeBlock.of(it) !== UnicodeBlock.LATIN_EXTENDED_ADDITIONAL) {
+                        ++nonLatinCount
+                    }
+                }
         if (latinCount * 2 < nonLatinCount) {
             val textWithoutLatin = StringBuffer()
-            for (i in 0 until text!!.length) {
-                val c = text!![i]
-                if (c > 'z' || c < 'A') textWithoutLatin.append(c)
-            }
+            (0 until text.length)
+                    .map { text[it] }
+                    .filter { it > 'z' || it < 'A' }
+                    .forEach { textWithoutLatin.append(it) }
             text = textWithoutLatin
         }
 
@@ -221,7 +214,6 @@ class Detector
     /**
      * @throws LangDetectException
      */
-    @Throws(LangDetectException::class)
     private fun detectBlock() {
         cleaningText()
         val ngrams = extractNGrams()
@@ -232,7 +224,7 @@ class Detector
 
         val rand = Random()
         if (seed != null) rand.setSeed(seed)
-        for (t in 0 until n_trial) {
+        for (t in 0 until numTrials) {
             val prob = initProbability()
             val alpha = this.alpha + rand.nextGaussian() * ALPHA_WIDTH
 
@@ -246,7 +238,7 @@ class Detector
                 }
                 ++i
             }
-            for (j in langprob.indices) langprob[j] += prob[j] / n_trial
+            for (j in langprob.indices) langprob[j] += prob[j] / numTrials
             if (verbose) println("==> " + sortProbability(prob))
         }
     }
@@ -270,17 +262,8 @@ class Detector
      * Extract n-grams from target text
      * @return n-grams list
      */
-    private fun extractNGrams(): ArrayList<String> {
-        val list = ArrayList<String>()
-        val ngram = NGram()
-        for (i in 0 until text.length) {
-            ngram.addChar(text[i])
-            for (n in 1..NGram.N_GRAM) {
-                val w = ngram[n]
-                if (w != null && wordLangProbMap.containsKey(w)) list.add(w)
-            }
-        }
-        return list
+    private fun extractNGrams(): List<String> {
+        return NGramGenerator().generate(text.toString())
     }
 
     /**
@@ -312,7 +295,7 @@ class Detector
     }
 
     /**
-     * @param probabilities HashMap
+     * @param prob
      * @return lanugage candidates order by probabilities descendently
      */
     private fun sortProbability(prob: DoubleArray): ArrayList<Language> {
@@ -350,8 +333,7 @@ class Detector
          */
         private fun normalizeProb(prob: DoubleArray): Double {
             var maxp = 0.0
-            var sump = 0.0
-            for (i in prob.indices) sump += prob[i]
+            val sump = prob.indices.sumByDouble { prob[it] }
             for (i in prob.indices) {
                 val p = prob[i] / sump
                 if (maxp < p) maxp = p
@@ -367,16 +349,18 @@ class Detector
          */
         private fun unicodeEncode(word: String): String {
             val buf = StringBuffer()
-            for (i in 0 until word.length) {
-                val ch = word[i]
-                if (ch >= '\u0080') {
-                    var st = Integer.toHexString(0x10000 + ch.toInt())
-                    while (st.length < 4) st = "0" + st
-                    buf.append("\\u").append(st.subSequence(1, 5))
-                } else {
-                    buf.append(ch)
-                }
-            }
+            (0 until word.length)
+                    .asSequence()
+                    .map { word[it] }
+                    .forEach {
+                        if (it >= '\u0080') {
+                            var st = Integer.toHexString(0x10000 + it.toInt())
+                            while (st.length < 4) st = "0" + st
+                            buf.append("\\u").append(st.subSequence(1, 5))
+                        } else {
+                            buf.append(it)
+                        }
+                    }
             return buf.toString()
         }
     }

@@ -1,4 +1,4 @@
-package com.digitalreasoning.langpredict.util
+package com.digitalreasoning.langpredict.profilegen
 
 import spock.lang.Specification
 
@@ -6,10 +6,10 @@ class TagExtractorTest extends Specification {
 
     def "testTagExtractor1"() {
         setup:
-        final TagExtractor extractor = new TagExtractor(null, 0)
+        final TagExtractor extractor = new TagExtractor("target", 0)
 
         expect:
-        extractor.target_ == null
+        extractor.target_ == "target"
         extractor.threshold_ == 0
     }
 
@@ -24,7 +24,7 @@ class TagExtractorTest extends Specification {
 
     def "testSetTag"() {
         setup:
-        final TagExtractor extractor = new TagExtractor(null, 0);
+        final TagExtractor extractor = new TagExtractor("abc", 0)
 
         when:
         extractor.setTag("")
@@ -34,12 +34,12 @@ class TagExtractorTest extends Specification {
         when:
         extractor.setTag(null)
         then:
-        extractor.tag == null
+        thrown(IllegalArgumentException)
     }
 
     def "testAdd"() {
         setup:
-        final TagExtractor extractor = new TagExtractor(null, 0)
+        final TagExtractor extractor = new TagExtractor("xyz", 0)
 
         when:
         extractor.add("")
@@ -51,7 +51,7 @@ class TagExtractorTest extends Specification {
 
     def "testCloseTag"() {
         setup:
-        final TagExtractor extractor = new TagExtractor(null, 0)
+        final TagExtractor extractor = new TagExtractor("123", 0)
 
         when:
         extractor.closeTag()
@@ -68,24 +68,25 @@ class TagExtractorTest extends Specification {
         extractor.count() == 0
 
         when:
-        final LangProfile profile = new LangProfile("en")
+        final LanguageProfileGenerator profileGenerator = new LanguageProfileGenerator("en")
 
         // normal
         extractor.setTag("abstract")
         extractor.add("This is a sample text.")
-        profile.update(extractor.closeTag())
+        profileGenerator.update(extractor.closeTag())
+        def profile = profileGenerator.generate()
 
         then:
         extractor.count() == 1
-        profile.n_words[0] == 17  // Thisisasampletext
-        profile.n_words[1] == 22  // _T, Th, hi, ...
-        profile.n_words[2] == 17  // _Th, Thi, his, ...
+        profile.ngramCounts[0] == 17  // Thisisasampletext
+        profile.ngramCounts[1] == 22  // _T, Th, hi, ...
+        profile.ngramCounts[2] == 17  // _Th, Thi, his, ...
 
         when:
         // too short
         extractor.setTag("abstract")
         extractor.add("sample")
-        profile.update(extractor.closeTag())
+        profileGenerator.update(extractor.closeTag())
 
         then:
         extractor.count() == 1
@@ -94,29 +95,9 @@ class TagExtractorTest extends Specification {
         // other tags
         extractor.setTag("div")
         extractor.add("This is a sample text which is enough long.")
-        profile.update(extractor.closeTag())
+        profileGenerator.update(extractor.closeTag())
 
         then:
         extractor.count() == 1
-    }
-
-    def "testClear"() {
-        setup:
-        final TagExtractor extractor = new TagExtractor("abstract", 10)
-
-        when:
-        extractor.setTag("abstract")
-        extractor.add("This is a sample text.")
-
-        then:
-        extractor.buf.toString() == "This is a sample text."
-        extractor.tag == "abstract"
-
-        when:
-        extractor.clear()
-
-        then:
-        extractor.buf.toString() ==  ""
-        extractor.tag == null
     }
 }

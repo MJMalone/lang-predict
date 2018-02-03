@@ -1,6 +1,6 @@
 package com.digitalreasoning.langpredict
 
-import com.digitalreasoning.langpredict.util.LangProfile
+import com.digitalreasoning.langpredict.profilegen.LanguageProfileGenerator
 import spock.lang.Specification
 
 class DetectorProfilesTest extends Specification {
@@ -12,23 +12,23 @@ class DetectorProfilesTest extends Specification {
     private DetectorProfiles profiles = new DetectorProfiles()
 
     def "setup"() {
-        final LangProfile profile_en = new LangProfile("en")
+        final LanguageProfileGenerator profile_en = new LanguageProfileGenerator("en")
         for (final String w : TRAINING_EN.split(" ")) {
             profile_en.add(w)
         }
-        profiles.addProfile(profile_en, 0, 3)
+        profiles.addProfile(profile_en.generate(), 0, 3)
 
-        final LangProfile profile_fr = new LangProfile("fr")
+        final LanguageProfileGenerator profile_fr = new LanguageProfileGenerator("fr")
         for (final String w : TRAINING_FR.split(" ")) {
             profile_fr.add(w)
         }
-        profiles.addProfile(profile_fr, 1, 3)
+        profiles.addProfile(profile_fr.generate(), 1, 3)
 
-        final LangProfile profile_ja = new LangProfile("ja")
+        final LanguageProfileGenerator profile_ja = new LanguageProfileGenerator("ja")
         for (final String w : TRAINING_JA.split(" ")) {
             profile_ja.add(w)
         }
-        profiles.addProfile(profile_ja, 2, 3)
+        profiles.addProfile(profile_ja.generate(), 2, 3)
     }
 
     def "testDetector1"() throws LangDetectException {
